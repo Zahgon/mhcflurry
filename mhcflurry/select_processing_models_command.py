@@ -227,7 +227,7 @@ def run(argv=sys.argv[1:]):
 
 
 def do_model_select_task(item, constant_data=GLOBAL_DATA):
-    return model_select(constant_data=constant_data, **item)
+    pass
 
 
 def model_select(

@@ -137,27 +137,7 @@ class Class1AffinityPredictor(object):
         -------
         pandas.DataFrame
         """
-        if self._manifest_df is None:
-            rows = []
-            for (i, model) in enumerate(self.class1_pan_allele_models):
-                rows.append((
-                    self.model_name("pan-class1", i),
-                    "pan-class1",
-                    json.dumps(model.get_config()),
-                    model
-                ))
-            for (allele, models) in self.allele_to_allele_specific_models.items():
-                for (i, model) in enumerate(models):
-                    rows.append((
-                        self.model_name(allele, i),
-                        allele,
-                        json.dumps(model.get_config()),
-                        model
-                    ))
-            self._manifest_df = pandas.DataFrame(
-                rows,
-                columns=["model_name", "allele", "config_json", "model"])
-        return self._manifest_df
+        pass
 
     def clear_cache(self):
         """
@@ -183,11 +163,7 @@ class Class1AffinityPredictor(object):
         -------
         list of `Class1NeuralNetwork`
         """
-        result = []
-        for models in self.allele_to_allele_specific_models.values():
-            result.extend(models)
-        result.extend(self.class1_pan_allele_models)
-        return result
+        pass
 
     @classmethod
     def merge(cls, predictors):
@@ -319,12 +295,7 @@ class Class1AffinityPredictor(object):
         -------
         list of string
         """
-        if 'supported_alleles' not in self._cache:
-            result = set(self.allele_to_allele_specific_models)
-            if self.allele_to_sequence:
-                result = result.union(self.allele_to_sequence)
-            self._cache["supported_alleles"] = sorted(result)
-        return self._cache["supported_alleles"]
+        pass
 
     @property
     def supported_peptide_lengths(self):
@@ -337,15 +308,7 @@ class Class1AffinityPredictor(object):
         (int, int) tuple
 
         """
-        if 'supported_peptide_lengths' not in self._cache:
-            length_ranges = set(
-                network.supported_peptide_lengths
-                for network in self.neural_networks)
-            result = (
-                max(lower for (lower, upper) in length_ranges),
-                min(upper for (lower, upper) in length_ranges))
-            self._cache["supported_peptide_lengths"] = result
-        return self._cache["supported_peptide_lengths"]
+        pass
 
     def check_consistency(self):
         """
@@ -783,12 +746,7 @@ class Class1AffinityPredictor(object):
         -------
         AlleleEncoding
         """
-        if (self._master_allele_encoding is None or
-                self._master_allele_encoding.allele_to_sequence !=
-                self.allele_to_sequence):
-            self._master_allele_encoding = AlleleEncoding(
-                allele_to_sequence=self.allele_to_sequence)
-        return self._master_allele_encoding
+        pass
 
     def fit_allele_specific_predictors(
             self,
@@ -984,43 +942,7 @@ class Class1AffinityPredictor(object):
         -------
         list of `Class1NeuralNetwork`
         """
-
-        alleles = pandas.Series(alleles).map(normalize_allele_name)
-        allele_encoding = AlleleEncoding(
-            alleles,
-            borrow_from=self.master_allele_encoding)
-
-        encodable_peptides = EncodableSequences.create(peptides)
-        models = []
-        for i in range(n_models):
-            logging.info("Training model %d / %d", i + 1, n_models)
-            model = Class1NeuralNetwork(**architecture_hyperparameters)
-            model.fit(
-                encodable_peptides,
-                affinities,
-                inequalities=inequalities,
-                allele_encoding=allele_encoding,
-                verbose=verbose,
-                progress_preamble=progress_preamble,
-                progress_print_interval=progress_print_interval)
-
-            model_name = self.model_name("pan-class1", i)
-            row = pandas.Series(collections.OrderedDict([
-                ("model_name", model_name),
-                ("allele", "pan-class1"),
-                ("config_json", json.dumps(model.get_config())),
-                ("model", model),
-            ])).to_frame().T
-            self._manifest_df = pandas.concat(
-                [self.manifest_df, row], ignore_index=True)
-            self.class1_pan_allele_models.append(model)
-            if models_dir_for_save:
-                self.save(
-                    models_dir_for_save, model_names_to_write=[model_name])
-            models.append(model)
-
-        self.clear_cache()
-        return models
+        pass
 
     def add_pan_allele_model(self, model, models_dir_for_save=None):
         """

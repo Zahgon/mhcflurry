@@ -490,8 +490,7 @@ def model_select(allele, constant_data=GLOBAL_DATA):
 def cache_encoding(predictor, peptides):
     # Encode the peptides for each neural network, so the encoding
     # becomes cached.
-    for network in predictor.neural_networks:
-        network.peptides_to_network_input(peptides)
+    pass
 
 
 class ScoreFunction(object):
@@ -563,17 +562,7 @@ class CombinedModelSelector(object):
             ]
 
             def score(predictor, additional_metadata_out=None):
-                scores = numpy.array([
-                    score_function(
-                        predictor,
-                        additional_metadata_out=additional_metadata_out) * weight
-                    for (score_function, weight) in score_functions_and_weights
-                ])
-                if additional_metadata_out is not None:
-                    additional_metadata_out["combined_score_terms"] = str(
-                        list(scores))
-
-                return scores.sum()
+                pass
         return ScoreFunction(score, summary=summary)
 
 
@@ -614,14 +603,7 @@ class ConsensusModelSelector(object):
             peptides=self.peptides)
 
         def score(predictor, additional_metadata_out=None):
-            predictions = predictor.predict(
-                allele=allele,
-                peptides=self.peptides,
-            )
-            tau = kendalltau(predictions, full_ensemble_predictions).correlation
-            if additional_metadata_out is not None:
-                additional_metadata_out["score_consensus_tau"] = tau
-            return tau * self.multiply_score_by_value
+            pass
 
         return ScoreFunction(
             score, summary=self.plan_summary(allele))
@@ -661,48 +643,7 @@ class MSEModelSelector(object):
         peptides = EncodableSequences.create(sub_df.peptide.values)
 
         def score(predictor, additional_metadata_out=None):
-            predictions = predictor.predict(
-                allele=allele,
-                peptides=peptides,
-            )
-            deviations = from_ic50(predictions) - from_ic50(
-                sub_df.measurement_value)
-
-            if 'measurement_inequality' in sub_df.columns:
-                # Must reverse meaning of inequality since we are working with
-                # transformed 0-1 values, which are anti-correlated with the ic50s.
-                # The measurement_inequality column is given in terms of ic50s.
-                deviations.loc[
-                    (
-                    (sub_df.measurement_inequality == "<") & (deviations > 0)) |
-                    ((sub_df.measurement_inequality == ">") & (deviations < 0))
-                    ] = 0.0
-
-            score_mse = (1 - (deviations ** 2).mean())
-            if additional_metadata_out is not None:
-                additional_metadata_out["score_MSE"] = 1 - score_mse
-
-                # We additionally include other scores on (=) measurements as
-                # a convenience
-                eq_df = sub_df
-                if 'measurement_inequality' in sub_df.columns:
-                    eq_df = sub_df.loc[
-                        sub_df.measurement_inequality == "="
-                        ]
-                additional_metadata_out["score_pearsonr"] = (
-                    pearsonr(
-                        numpy.log(eq_df.measurement_value.values),
-                        numpy.log(predictions[eq_df.index.values]))[0])
-
-                for threshold in [500, 5000, 15000]:
-                    if (eq_df.measurement_value < threshold).nunique() == 2:
-                        additional_metadata_out["score_AUC@%d" % threshold] = (
-                            roc_auc_score(
-                                (eq_df.measurement_value < threshold).values,
-                                -1 * predictions[eq_df.index.values]))
-
-            return score_mse * (
-                len(sub_df) if self.multiply_score_by_data_size else 1)
+            pass
 
         summary = "mse (%d points)" % (len(sub_df))
         return ScoreFunction(score, summary=summary)
@@ -776,18 +717,7 @@ class MassSpecModelSelector(object):
         total_decoys = (self.df[allele] == 0).sum()
         multiplier = total_hits if self.multiply_score_by_data_size else 1
         def score(predictor, additional_metadata_out=None):
-            predictions = predictor.predict(
-                allele=allele,
-                peptides=self.peptides,
-            )
-            ppv = self.ppv(self.df[allele], predictions)
-            if additional_metadata_out is not None:
-                additional_metadata_out["score_mass_spec_PPV"] = ppv
-
-                # We additionally compute AUC score.
-                additional_metadata_out["score_mass_spec_AUC"] = roc_auc_score(
-                    self.df[allele].values, -1 * predictions)
-            return ppv * multiplier
+            pass
 
         summary = "mass-spec (%d hits / %d decoys)" % (total_hits, total_decoys)
         return ScoreFunction(score, summary=summary)

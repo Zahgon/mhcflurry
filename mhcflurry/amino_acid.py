@@ -88,7 +88,7 @@ def available_vector_encodings():
     list of string
 
     """
-    return list(ENCODING_DATA_FRAMES)
+    pass
 
 
 def vector_encoding_length(name):
@@ -103,7 +103,7 @@ def vector_encoding_length(name):
     -------
     int
     """
-    return ENCODING_DATA_FRAMES[name].shape[1]
+    pass
 
 
 def index_encoding(sequences, letter_to_index_dict):

@@ -74,35 +74,7 @@ class MSEWithInequalities(nn.Module):
         torch.Tensor
             Scalar loss value
         """
-        y_true = y_true.reshape(-1)
-        y_pred = y_pred.reshape(-1)
-
-        # Handle (=) inequalities: 0 <= y_true <= 1
-        diff1 = y_pred - y_true
-        diff1 = diff1 * (y_true >= 0.0).float() * (y_true <= 1.0).float()
-
-        # Handle (>) inequalities: 2 <= y_true <= 3
-        # Penalize only if pred < threshold (diff < 0)
-        diff2 = y_pred - (y_true - 2.0)
-        diff2 = diff2 * (y_true >= 2.0).float() * (y_true <= 3.0).float()
-        diff2 = diff2 * (diff2 < 0.0).float()
-
-        # Handle (<) inequalities: y_true >= 4
-        # Penalize only if pred > threshold (diff > 0)
-        diff3 = y_pred - (y_true - 4.0)
-        diff3 = diff3 * (y_true >= 4.0).float()
-        diff3 = diff3 * (diff3 > 0.0).float()
-
-        per_sample = diff1.square() + diff2.square() + diff3.square()
-        if sample_weights is None:
-            denominator = torch.clamp(
-                (y_true != 2.0).float().sum(), min=1.0
-            )
-            return per_sample.sum() / denominator
-        sample_weights = sample_weights.reshape(-1).to(per_sample.device)
-        mask = (y_true != 2.0).float()
-        denominator = torch.clamp((sample_weights * mask).sum(), min=1.0)
-        return (per_sample * sample_weights).sum() / denominator
+        pass
 
 
 class MSEWithInequalitiesAndMultipleOutputs(nn.Module):
@@ -162,47 +134,7 @@ class MSEWithInequalitiesAndMultipleOutputs(nn.Module):
         torch.Tensor
             Scalar loss value
         """
-        y_true = y_true.reshape(-1)
-        if y_pred.dim() == 1:
-            y_pred = y_pred.unsqueeze(1)
-
-        # Decode output indices
-        output_indices = (y_true / 10.0).long()
-        inequality_encoded = y_true - output_indices.float() * 10.0
-
-        # Select the relevant output for each sample
-        batch_indices = torch.arange(len(y_true), device=y_pred.device)
-        output_indices_clamped = output_indices.clamp(0, y_pred.shape[1] - 1)
-        selected_pred = y_pred[batch_indices, output_indices_clamped]
-
-        # Apply MSEWithInequalities logic on selected predictions
-        y_t = inequality_encoded
-        y_p = selected_pred
-
-        # Handle (=) inequalities
-        diff1 = y_p - y_t
-        diff1 = diff1 * (y_t >= 0.0).float() * (y_t <= 1.0).float()
-
-        # Handle (>) inequalities
-        diff2 = y_p - (y_t - 2.0)
-        diff2 = diff2 * (y_t >= 2.0).float() * (y_t <= 3.0).float()
-        diff2 = diff2 * (diff2 < 0.0).float()
-
-        # Handle (<) inequalities
-        diff3 = y_p - (y_t - 4.0)
-        diff3 = diff3 * (y_t >= 4.0).float()
-        diff3 = diff3 * (diff3 > 0.0).float()
-
-        per_sample = diff1.square() + diff2.square() + diff3.square()
-        if sample_weights is None:
-            denominator = torch.clamp(
-                (y_t != 2.0).float().sum(), min=1.0
-            )
-            return per_sample.sum() / denominator
-        sample_weights = sample_weights.reshape(-1).to(per_sample.device)
-        mask = (y_t != 2.0).float()
-        denominator = torch.clamp((sample_weights * mask).sum(), min=1.0)
-        return (per_sample * sample_weights).sum() / denominator
+        pass
 
 
 class MultiallelicMassSpecLoss(nn.Module):
@@ -248,41 +180,7 @@ class MultiallelicMassSpecLoss(nn.Module):
         torch.Tensor
             Scalar loss value
         """
-        y_true = y_true.reshape(-1)
-
-        if y_pred.dim() == 1:
-            y_pred = y_pred.unsqueeze(1)
-
-        # Get hit and decoy masks
-        hit_mask = (y_true == 1.0)
-        decoy_mask = (y_true == 0.0)
-
-        num_hits = hit_mask.sum().item()
-        num_decoys = decoy_mask.sum().item()
-
-        if num_hits == 0 or num_decoys == 0:
-            return torch.tensor(0.0, device=y_pred.device, requires_grad=True)
-
-        num_alleles = y_pred.shape[1]
-
-        # Best allele prediction for each hit: (num_hits,)
-        hit_preds = y_pred[hit_mask]
-        hit_max = hit_preds.max(dim=1).values  # (num_hits,)
-
-        # All decoy predictions: (num_decoys, num_alleles)
-        decoy_preds = y_pred[decoy_mask]
-
-        # Compute pairwise terms:
-        # For each (decoy, allele, hit): max(0, decoy_pred - hit_max + delta)^2
-        # decoy_preds: (num_decoys, num_alleles) -> (num_decoys, num_alleles, 1)
-        # hit_max: (num_hits,) -> (1, 1, num_hits)
-        term = decoy_preds.unsqueeze(2) - hit_max.unsqueeze(0).unsqueeze(0) + self.delta
-        penalty = torch.clamp(term, min=0.0).square()
-
-        denominator = num_hits * num_decoys * num_alleles
-        result = self.multiplier * penalty.sum() / denominator
-
-        return result
+        pass
 
 
 class StandardLoss(nn.Module):
@@ -323,20 +221,7 @@ class StandardLoss(nn.Module):
         torch.Tensor
             Scalar loss value
         """
-        y_pred = y_pred.reshape(-1)
-        y_true = y_true.reshape(-1)
-
-        if sample_weights is None:
-            return self._loss_fn(y_pred, y_true)
-        if self.loss_name == "mse":
-            losses = F.mse_loss(y_pred, y_true, reduction="none")
-        elif self.loss_name == "mae":
-            losses = F.l1_loss(y_pred, y_true, reduction="none")
-        else:
-            losses = self._loss_fn(y_pred, y_true)
-        sample_weights = sample_weights.reshape(-1).to(losses.device)
-        denominator = torch.clamp(sample_weights.sum(), min=1.0)
-        return (losses * sample_weights).sum() / denominator
+        pass
 
 
 # Registry of custom losses

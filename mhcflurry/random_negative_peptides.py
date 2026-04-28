@@ -143,24 +143,7 @@ class RandomNegativePeptides(object):
         proportionally to the number of times they are used in the training
         data.
         """
-        assert list(df_all.allele.unique()) == [""], (
-            "by_length only recommended for allele specific prediction")
-
-        df = df_all if df_binders is None else df_binders
-        lengths = self.hyperparameters['random_negative_lengths']
-
-        length_to_num_random_negative = {}
-        length_counts = df.length.value_counts().to_dict()
-        for length in lengths:
-            length_to_num_random_negative[length] = int(
-                length_counts.get(length, 0) *
-                self.hyperparameters['random_negative_rate'] +
-                self.hyperparameters['random_negative_constant'])
-
-        plan_df = pandas.DataFrame(index=sorted(df.allele.unique()))
-        for length in lengths:
-            plan_df[length] = length_to_num_random_negative[length]
-        self.plan_df = plan_df.astype(int)
+        pass
 
     def plan_by_allele(self, df_all, df_binders=None, df_nonbinders=None):
         """
@@ -173,25 +156,7 @@ class RandomNegativePeptides(object):
         varies; within an allele, the number of random negatives for each
         length is a constant
         """
-        allele_to_num_per_length = {}
-        total_random_peptides_per_length = 0
-        df = df_all if df_binders is None else df_binders
-        lengths = self.hyperparameters['random_negative_lengths']
-        all_alleles = df_all.allele.unique()
-        for allele in all_alleles:
-            sub_df = df.loc[df.allele == allele]
-            num_for_allele = len(sub_df) * (
-                self.hyperparameters['random_negative_rate']
-            ) + self.hyperparameters['random_negative_constant']
-            num_per_length = int(math.ceil(
-                num_for_allele / len(lengths)))
-            total_random_peptides_per_length += num_per_length
-            allele_to_num_per_length[allele] = num_per_length
-
-        plan_df = pandas.DataFrame(index=sorted(df.allele.unique()))
-        for length in lengths:
-            plan_df[length] = plan_df.index.map(allele_to_num_per_length)
-        self.plan_df = plan_df.astype(int)
+        pass
 
     def plan_by_allele_equalize_nonbinders(
             self, df_all, df_binders, df_nonbinders):
@@ -211,36 +176,7 @@ class RandomNegativePeptides(object):
         additional random negative peptides are added so that for each allele,
         all peptide lengths have the same total number of non-binders.
         """
-        assert df_binders is not None
-        assert df_nonbinders is not None
-
-        lengths = self.hyperparameters['random_negative_lengths']
-
-        self.plan_by_allele(df_all, df_binders, df_nonbinders)
-        first_pass_plan = self.plan_df
-        self.plan_df = None
-
-        # Use floating point while populating so NaN assignment remains valid
-        # across pandas versions; cast to int at the end.
-        new_plan = first_pass_plan.astype(float).copy()
-        new_plan[:] = numpy.nan
-
-        for (allele, first_pass_per_length) in first_pass_plan.iterrows():
-            real_nonbinders_by_length = df_nonbinders.loc[
-                df_nonbinders.allele == allele
-            ].length.value_counts().reindex(lengths).fillna(0)
-            total_nonbinders_by_length = (
-                real_nonbinders_by_length + first_pass_per_length)
-            new_plan.loc[allele] = first_pass_per_length + (
-                total_nonbinders_by_length.max() - total_nonbinders_by_length)
-
-        if new_plan.isna().any().any():
-            raise AssertionError(
-                "Random negative plan contains NaN after equalization; "
-                "this indicates an incomplete per-allele assignment bug."
-            )
-
-        self.plan_df = new_plan.astype(int)
+        pass
 
     def get_alleles(self):
         """

@@ -89,24 +89,7 @@ class EncodableSequences(object):
         For pad_middle, the encoded length is max_length. For left_pad_right_pad,
         it's 3 * max_length.
         """
-
-        cache_key = (
-            "fixed_length_categorical",
-            alignment_method,
-            left_edge,
-            right_edge,
-            max_length)
-
-        if cache_key not in self.encoding_cache:
-            fixed_length_sequences = (
-                self.sequences_to_fixed_length_index_encoded_array(
-                    self.sequences,
-                    alignment_method=alignment_method,
-                    left_edge=left_edge,
-                    right_edge=right_edge,
-                    max_length=max_length))
-            self.encoding_cache[cache_key] = fixed_length_sequences
-        return self.encoding_cache[cache_key]
+        pass
 
     def variable_length_to_fixed_length_vector_encoding(
             self,

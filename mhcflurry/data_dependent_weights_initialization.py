@@ -95,7 +95,7 @@ def get_activations_pytorch(model, layer_name, x_dict, device=None):
     activations = {}
 
     def hook_fn(module, input, output):
-        activations['output'] = output.detach().cpu().numpy()
+        pass
 
     # Find the layer by name
     target_layer = None

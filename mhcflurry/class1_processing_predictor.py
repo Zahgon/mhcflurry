@@ -74,12 +74,7 @@ class Class1ProcessingPredictor(object):
         Keys are "peptide", "n_flank", "c_flank". Values give the maximum
         supported sequence length.
         """
-        df = pandas.DataFrame([model.sequence_lengths for model in self.models])
-        return {
-            "peptide": df.peptide.min(),  # min: anything greater is error
-            "n_flank": df.n_flank.max(),  # max: anything greater is ignored
-            "c_flank": df.c_flank.max(),
-        }
+        pass
 
     def add_models(self, models):
         """
@@ -127,19 +122,7 @@ class Class1ProcessingPredictor(object):
         -------
         pandas.DataFrame
         """
-        if self._manifest_df is None:
-            rows = []
-            for (i, model) in enumerate(self.models):
-                model_config = model.get_config()
-                rows.append((
-                    self.model_name(i),
-                    json.dumps(model_config, cls=NumpyJSONEncoder),
-                    model
-                ))
-            self._manifest_df = pandas.DataFrame(
-                rows,
-                columns=["model_name", "config_json", "model"])
-        return self._manifest_df
+        pass
 
     @staticmethod
     def model_name(num):

@@ -402,18 +402,7 @@ class Class1NeuralNetworkModel(nn.Module):
 
     def _initialize_weights(self, init):
         """Initialize layer weights."""
-        for module in self.modules():
-            if isinstance(module, nn.Linear):
-                if init == "glorot_uniform":
-                    nn.init.xavier_uniform_(module.weight)
-                elif init == "glorot_normal":
-                    nn.init.xavier_normal_(module.weight)
-                elif init == "he_uniform":
-                    nn.init.kaiming_uniform_(module.weight)
-                elif init == "he_normal":
-                    nn.init.kaiming_normal_(module.weight)
-                if module.bias is not None:
-                    nn.init.zeros_(module.bias)
+        pass
 
     def forward(self, inputs):
         """
@@ -429,86 +418,7 @@ class Class1NeuralNetworkModel(nn.Module):
         torch.Tensor
             Predictions of shape (batch, num_outputs)
         """
-        peptide = inputs['peptide']
-
-        # Locally connected layers
-        x = peptide
-        for lc_layer in self.lc_layers:
-            x = lc_layer(x)
-
-        # Flatten
-        x = x.reshape(x.size(0), -1)
-
-        # Peptide dense layers
-        for layer in self.peptide_dense_layers:
-            x = layer(x)
-            if self.activation is not None:
-                x = self.activation(x)
-
-        # Early batch normalization
-        if self.batch_norm_early is not None:
-            x = self.batch_norm_early(x)
-
-        # Allele processing and merge
-        if self.has_allele and 'allele' in inputs:
-            allele_idx = inputs['allele'].long()
-            # Handle case where input might be (batch,) or (batch, 1)
-            if allele_idx.dim() > 1:
-                allele_idx = allele_idx.squeeze(-1)
-            allele_embed = self.allele_embedding(allele_idx)
-
-            # Allele dense layers
-            for layer in self.allele_dense_layers:
-                allele_embed = layer(allele_embed)
-                if self.activation is not None:
-                    allele_embed = self.activation(allele_embed)
-
-            # Flatten allele embedding
-            allele_embed = allele_embed.reshape(allele_embed.size(0), -1)
-
-            # Merge
-            if self.peptide_allele_merge_method == "concatenate":
-                x = torch.cat([x, allele_embed], dim=-1)
-            elif self.peptide_allele_merge_method == "multiply":
-                x = x * allele_embed
-
-            # Merge activation
-            if self.merge_activation is not None:
-                x = self.merge_activation(x)
-
-        # Main dense layers (with optional skip connections for DenseNet topology)
-        prev_outputs = []  # Track outputs for skip connections
-        merged_input = x  # Save for DenseNet skip connections
-
-        for i, layer in enumerate(self.dense_layers):
-            # For DenseNet topology, concatenate skip connections
-            if self.topology == "with-skip-connections" and i > 0:
-                if i == 1:
-                    # Skip from original merged input
-                    x = torch.cat([merged_input, prev_outputs[-1]], dim=-1)
-                else:
-                    # Skip from 2 layers back
-                    x = torch.cat([prev_outputs[-2], prev_outputs[-1]], dim=-1)
-
-            x = layer(x)
-            if self.activation is not None:
-                x = self.activation(x)
-            if self.batch_norms[i] is not None:
-                x = self.batch_norms[i](x)
-            if self.dropouts[i] is not None:
-                x = self.dropouts[i](x)
-
-            prev_outputs.append(x)
-
-        # Note: For DenseNet topology, output layer receives only the last hidden layer output
-        # (skip connections are only between hidden layers, not to the output layer)
-
-        # Output
-        output = self.output_layer(x)
-        if self.output_activation is not None:
-            output = self.output_activation(output)
-
-        return output
+        pass
 
     def get_weights_list(self):
         """
@@ -809,49 +719,7 @@ class Class1NeuralNetworkModel(nn.Module):
         str
             JSON representation of model configuration
         """
-        import json
-
-        # Extract layer configurations
-        lc_layers_config = []
-        for lc_layer in self.lc_layers:
-            lc_layers_config.append({
-                'in_channels': lc_layer.in_channels,
-                'out_channels': lc_layer.out_channels,
-                'kernel_size': lc_layer.kernel_size,
-                'input_length': lc_layer.input_length,
-                'output_length': lc_layer.output_length,
-                'activation': lc_layer.activation_name,
-            })
-
-        peptide_dense_sizes = [
-            layer.out_features for layer in self.peptide_dense_layers
-        ]
-        allele_dense_sizes = [
-            layer.out_features for layer in self.allele_dense_layers
-        ]
-        layer_sizes = [
-            layer.out_features for layer in self.dense_layers
-        ]
-
-        config = {
-            'class': 'Class1NeuralNetworkModel',
-            'peptide_encoding_shape': list(self.peptide_encoding_shape),
-            'has_allele': self.has_allele,
-            'peptide_allele_merge_method': self.peptide_allele_merge_method,
-            'peptide_allele_merge_activation': self.peptide_allele_merge_activation,
-            'dropout_probability': self.dropout_probability,
-            'topology': self.topology,
-            'num_outputs': self.num_outputs,
-            'activation': self.activation_name,
-            'output_activation': self.output_activation_name,
-            'locally_connected_layers': lc_layers_config,
-            'peptide_dense_layer_sizes': peptide_dense_sizes,
-            'allele_dense_layer_sizes': allele_dense_sizes,
-            'layer_sizes': layer_sizes,
-            'batch_normalization': self.batch_norm_early is not None,
-        }
-
-        return json.dumps(config, sort_keys=True)
+        pass
 
 
 class Class1NeuralNetwork(object):
@@ -985,12 +853,7 @@ class Class1NeuralNetwork(object):
         dict : updated hyperparameters
 
         """
-        for from_name, to_name in cls.hyperparameter_renames.items():
-            if from_name in hyperparameters:
-                value = hyperparameters.pop(from_name)
-                if to_name:
-                    hyperparameters[to_name] = value
-        return hyperparameters
+        pass
 
     def __init__(self, **hyperparameters):
         self.hyperparameters = self.hyperparameter_defaults.with_defaults(
@@ -1354,10 +1217,7 @@ class Class1NeuralNetwork(object):
         """
         # Remove regularization settings as they don't affect predictions
         def drop_properties(d):
-            if isinstance(d, dict):
-                d.pop('dense_layer_l1_regularization', None)
-                d.pop('dense_layer_l2_regularization', None)
-            return d
+            pass
 
         description = json.loads(network_json, object_hook=drop_properties)
         return json.dumps(description)
@@ -1367,7 +1227,7 @@ class Class1NeuralNetwork(object):
         """
         Backward-compatible alias for ``model_cache_key``.
         """
-        return Class1NeuralNetwork.model_cache_key(network_json)
+        pass
 
     def network(self, borrow=False):
         """
@@ -1633,11 +1493,7 @@ class Class1NeuralNetwork(object):
         (int, int) tuple
 
         """
-        try:
-            self.peptides_to_network_input([""])
-        except EncodingError as e:
-            return e.supported_peptide_lengths
-        raise RuntimeError("peptides_to_network_input did not raise")
+        pass
 
     def allele_encoding_to_network_input(self, allele_encoding):
         """
@@ -2737,17 +2593,7 @@ class MergedClass1NeuralNetwork(nn.Module):
         self.merge_method = merge_method
 
     def forward(self, inputs):
-        outputs = [network(inputs) for network in self.networks]
-        stacked = torch.stack(outputs, dim=-1)
-
-        if self.merge_method == "average":
-            return stacked.mean(dim=-1)
-        elif self.merge_method == "sum":
-            return stacked.sum(dim=-1)
-        elif self.merge_method == "concatenate":
-            return torch.cat(outputs, dim=-1)
-        else:
-            raise ValueError(f"Unknown merge method: {self.merge_method}")
+        pass
 
     def get_weights_list(self):
         """Get all weights as a flat list."""

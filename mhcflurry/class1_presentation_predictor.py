@@ -73,34 +73,29 @@ class Class1PresentationPredictor(object):
         """
         List of alleles supported by the underlying Class1AffinityPredictor
         """
-        return self.affinity_predictor.supported_alleles
+        pass
 
     @property
     def supported_peptide_lengths(self):
         """
         (min, max) of supported peptide lengths, inclusive.
         """
-        return self.affinity_predictor.supported_peptide_lengths
+        pass
 
     @property
     def supports_affinity_prediction(self):
         """Is there an affinity predictor associated with this instance?"""
-        return self.affinity_predictor is not None
+        pass
 
     @property
     def supports_processing_prediction(self):
         """Is there a processing predictor associated with this instance?"""
-        return (
-            self.processing_predictor_with_flanks is not None or
-            self.processing_predictor_without_flanks is not None)
+        pass
 
     @property
     def supports_presentation_prediction(self):
         """Can this instance predict presentation?"""
-        return (
-            self.supports_affinity_prediction and
-            self.supports_processing_prediction and
-            self.weights_dataframe is not None)
+        pass
 
     def predict_affinity(
             self,

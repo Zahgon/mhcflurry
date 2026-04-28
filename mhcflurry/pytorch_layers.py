@@ -93,25 +93,4 @@ class LocallyConnected1D(nn.Module):
         torch.Tensor
             Output tensor of shape (batch, output_length, out_channels)
         """
-        batch_size = x.size(0)
-
-        # Use unfold to extract patches and match Keras flatten order.
-        # x_unfolded shape: (batch, output_length, in_channels, kernel_size)
-        x_unfolded = x.unfold(1, self.kernel_size, 1)
-        # Keras flattens patches with kernel positions first, then channels.
-        x_unfolded = x_unfolded.permute(0, 1, 3, 2)
-        # Reshape to (batch, output_length, kernel_size * in_channels)
-        x_unfolded = x_unfolded.reshape(
-            batch_size, self.output_length, self.kernel_size * self.in_channels
-        )
-
-        # Apply locally connected weights via einsum
-        # x_unfolded: (batch, output_length, in_channels * kernel_size)
-        # weight: (output_length, out_channels, in_channels * kernel_size)
-        # result: (batch, output_length, out_channels)
-        output = torch.einsum('boi,ofi->bof', x_unfolded, self.weight) + self.bias
-
-        if self._activation is not None:
-            output = self._activation(output)
-
-        return output
+        pass

@@ -128,168 +128,33 @@ class Class1ProcessingModel(nn.Module):
         torch.Tensor
             Predictions of shape (batch,)
         """
-        sequence = inputs['sequence']  # (batch, seq_len, channels)
-        peptide_length = inputs['peptide_length']  # (batch, 1)
-
-        # Transpose for Conv1d: (batch, channels, seq_len)
-        x = sequence.permute(0, 2, 1)
-
-        # Apply main convolution
-        x = self.conv1(x)
-        x = self.conv_activation(x)
-
-        if self.dropout is not None:
-            # Spatial dropout: same dropout mask for all positions
-            # Equivalent to Keras Dropout with noise_shape=(None, 1, channels)
-            x = self.dropout(x)
-
-        # Transpose back: (batch, seq_len, channels)
-        convolutional_result = x.permute(0, 2, 1)
-
-        outputs_for_final = []
-
-        # Process n_flank
-        n_flank_outputs = self._process_n_flank(
-            convolutional_result, peptide_length
-        )
-        outputs_for_final.extend(n_flank_outputs)
-
-        # Process c_flank
-        c_flank_outputs = self._process_c_flank(
-            convolutional_result, peptide_length
-        )
-        outputs_for_final.extend(c_flank_outputs)
-
-        # Concatenate all outputs
-        combined = torch.cat(outputs_for_final, dim=-1)
-
-        # Final output
-        output = torch.sigmoid(self.output_layer(combined))
-        return output.squeeze(-1)
+        pass
 
     def _process_n_flank(self, conv_result, peptide_length):
         """Process n_flank feature extraction."""
-        outputs = []
-
-        # Apply post-convolutional layers
-        # Transpose for Conv1d
-        x = conv_result.permute(0, 2, 1)
-        for i, conv_layer in enumerate(self.n_flank_post_convs):
-            x = conv_layer(x)
-            if i < len(self.n_flank_post_convs) - 1:
-                x = self.conv_activation(x)
-            else:
-                x = torch.tanh(x)  # Final layer always tanh
-        # Transpose back
-        single_output_result = x.permute(0, 2, 1)  # (batch, seq_len, 1)
-
-        # Extract at cleavage position (n_flank_length)
-        cleaved = single_output_result[:, self.n_flank_length, :]  # (batch, 1)
-        outputs.append(cleaved)
-
-        # Max pool over peptide (excluding first position)
-        max_pool = self._max_pool_over_peptide_n(
-            single_output_result, peptide_length
-        )
-        outputs.append(max_pool)
-
-        # Optional flanking average
-        if self.n_flank_avg_dense is not None and self.n_flank_length > 0:
-            avg = self._extract_n_flank_avg(conv_result)
-            dense_out = torch.tanh(self.n_flank_avg_dense(avg))  # (batch, 1)
-            outputs.append(dense_out)
-
-        return outputs
+        pass
 
     def _process_c_flank(self, conv_result, peptide_length):
         """Process c_flank feature extraction."""
-        outputs = []
-
-        # Apply post-convolutional layers
-        x = conv_result.permute(0, 2, 1)
-        for i, conv_layer in enumerate(self.c_flank_post_convs):
-            x = conv_layer(x)
-            if i < len(self.c_flank_post_convs) - 1:
-                x = self.conv_activation(x)
-            else:
-                x = torch.tanh(x)
-        single_output_result = x.permute(0, 2, 1)  # (batch, seq_len, 1)
-
-        # Extract at cleavage position (dynamic based on peptide_length)
-        cleaved = self._extract_c_cleavage(single_output_result, peptide_length)
-        outputs.append(cleaved)
-
-        # Max pool over peptide (excluding last position)
-        max_pool = self._max_pool_over_peptide_c(
-            single_output_result, peptide_length
-        )
-        outputs.append(max_pool)
-
-        # Optional flanking average
-        if self.c_flank_avg_dense is not None and self.c_flank_length > 0:
-            # Average over c_flank region (dynamic based on peptide_length)
-            avg = self._extract_c_flank_avg(conv_result, peptide_length)
-            dense_out = torch.tanh(self.c_flank_avg_dense(avg))
-            outputs.append(dense_out)
-
-        return outputs
+        pass
 
     def _max_pool_over_peptide_n(self, x, peptide_length):
         """
         Max pool over peptide region excluding first position.
         For n_flank cleavage site.
         """
-        batch_size, seq_len, features = x.shape
-        peptide_length = peptide_length.view(-1)
-
-        # Create position indices
-        positions = torch.arange(seq_len, device=x.device).unsqueeze(0)
-
-        # Mask: 1 for positions from n_flank_length+1 to n_flank_length+peptide_length
-        starts = self.n_flank_length + 1
-        ends = (self.n_flank_length + peptide_length).unsqueeze(1)
-        mask = (positions >= starts) & (positions < ends)  # (batch, seq_len)
-
-        # Apply mask (assuming x >= -1 from tanh)
-        x_shifted = x + 1
-        mask_expanded = mask.unsqueeze(-1).float()
-        masked_x = x_shifted * mask_expanded
-        max_value = masked_x.max(dim=1)[0] - 1  # (batch, features)
-
-        # Flip sign
-        return -1 * max_value
+        pass
 
     def _max_pool_over_peptide_c(self, x, peptide_length):
         """
         Max pool over peptide region excluding last position.
         For c_flank cleavage site.
         """
-        batch_size, seq_len, features = x.shape
-        peptide_length = peptide_length.view(-1)
-
-        positions = torch.arange(seq_len, device=x.device).unsqueeze(0)
-
-        # Mask: 1 for positions from n_flank_length to n_flank_length+peptide_length-1
-        starts = self.n_flank_length
-        ends = (self.n_flank_length + peptide_length - 1).unsqueeze(1)
-        mask = (positions >= starts) & (positions < ends)
-
-        x_shifted = x + 1
-        mask_expanded = mask.unsqueeze(-1).float()
-        masked_x = x_shifted * mask_expanded
-        max_value = masked_x.max(dim=1)[0] - 1
-
-        return -1 * max_value
+        pass
 
     def _extract_c_cleavage(self, x, peptide_length):
         """Extract at c-terminal cleavage position."""
-        peptide_length = peptide_length.view(-1)
-        indices = self.n_flank_length + peptide_length - 1
-
-        batch_size = x.size(0)
-        indices = indices.long().view(batch_size, 1, 1).expand(-1, -1, x.size(2))
-        result = x.gather(1, indices).squeeze(1)  # (batch, features)
-        return result
+        pass
 
     def _extract_c_flank_avg(self, conv_result, peptide_length):
         """
@@ -299,21 +164,7 @@ class Class1ProcessingModel(nn.Module):
             reduce_mean((x + 1) * mask, axis=1) - 1
         which averages across the full sequence axis (not only masked positions).
         """
-        batch_size, seq_len, features = conv_result.shape
-        peptide_length = peptide_length.view(-1)
-
-        positions = torch.arange(seq_len, device=conv_result.device).unsqueeze(0)
-
-        # Mask: 1 for c_flank positions
-        starts = (self.n_flank_length + peptide_length).unsqueeze(1)
-        ends = starts + self.c_flank_length
-        mask = (positions >= starts) & (positions < ends)
-
-        x_shifted = conv_result + 1
-        mask_expanded = mask.unsqueeze(-1).float()
-        avg_value = (x_shifted * mask_expanded).mean(dim=1) - 1
-
-        return avg_value
+        pass
 
     def _extract_n_flank_avg(self, conv_result):
         """
@@ -323,15 +174,7 @@ class Class1ProcessingModel(nn.Module):
             reduce_mean((x + 1) * mask, axis=1) - 1
         where mask selects n-flank positions.
         """
-        _, seq_len, _ = conv_result.shape
-
-        positions = torch.arange(seq_len, device=conv_result.device).unsqueeze(0)
-        mask = (positions >= 0) & (positions < self.n_flank_length)
-        mask_expanded = mask.unsqueeze(-1).float()
-
-        x_shifted = conv_result + 1
-        avg_value = (x_shifted * mask_expanded).mean(dim=1) - 1
-        return avg_value
+        pass
 
     def get_weights_list(self):
         """Get weights as a list of numpy arrays."""
@@ -531,11 +374,7 @@ class Class1ProcessingNeuralNetwork(object):
         Keys are "peptide", "n_flank", "c_flank". Values give the maximum
         supported sequence length.
         """
-        return {
-            "peptide": self.hyperparameters["peptide_max_length"],
-            "n_flank": self.hyperparameters["n_flank_length"],
-            "c_flank": self.hyperparameters["c_flank_length"],
-        }
+        pass
 
     def get_device(self):
         """Get the PyTorch device to use."""

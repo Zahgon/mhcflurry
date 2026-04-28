@@ -53,7 +53,7 @@ class NonDaemonProcess(multiprocessing.Process):
 
     @property
     def daemon(self) -> bool:
-        return False
+        pass
 
     @daemon.setter
     def daemon(self, value) -> None:
@@ -382,22 +382,7 @@ def make_worker_pool(
 
 def worker_init_entry_point(
         init_function, arg_queue=None, backup_arg_queue=None):
-    kwargs = {}
-    if arg_queue:
-        try:
-            kwargs = arg_queue.get(block=False)
-        except queue.Empty:
-            print("Argument queue empty. Using round robin arg queue.")
-            kwargs = backup_arg_queue.get(block=True)
-            backup_arg_queue.put(kwargs)
-
-        # On exit we add the init args back to the queue so restarted workers
-        # (e.g. when when running with maxtasksperchild) will pickup init
-        # arguments from a previously exited worker.
-        Finalize(None, arg_queue.put, (kwargs,), exitpriority=1)
-
-    print("Initializing worker: %s" % str(kwargs))
-    init_function(**kwargs)
+    pass
 
 
 def worker_init(
